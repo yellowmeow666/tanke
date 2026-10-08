@@ -7,6 +7,16 @@ import { expect, test, type Page } from '@playwright/test';
 
 const status = (page: Page) => page.getByTestId('game-status');
 const enemiesLeft = (page: Page) => page.getByTestId('enemies-left');
+/**
+ * 剩余敌人元素的文本带前缀（如「剩余敌人：4」），只断言末尾的数字：
+ * 前面不能有其他数字，数字后面不能有别的内容。
+ */
+const enemyCount = (digits: string) => new RegExp(`^\\D*${digits}$`);
+/**
+ * 页面每个固定步长读取一次「当前按住的键」，keydown 和 keyup 落在同一帧里的瞬时按键不会被看到。
+ * 按住约 100ms 再松开，模拟真人按一次空格。
+ */
+const pressFire = (page: Page) => page.keyboard.press('Space', { delay: 100 });
 
 /** 取画布底部中间（玩家出生区域）附近 3×3 格的像素快照，用来判断玩家是否移动。 */
 async function playerAreaSnapshot(page: Page): Promise<string> {
@@ -20,7 +30,6 @@ async function playerAreaSnapshot(page: Page): Promise<string> {
     let hash = 0;
     for (let i = 0; i < data.length; i += 1) {
       // 开启 noUncheckedIndexedAccess 后，下标读取的类型是 number | undefined。
-      // 循环条件已经保证 i 落在 data.length 内，缺值时按 0 参与哈希，不改变像素对比。
       const sample = data[i] ?? 0;
       hash = (hash * 31 + sample) | 0;
     }
@@ -32,7 +41,7 @@ test.describe('默认地图', () => {
   test('开局：状态为 playing，剩余敌人为 4，有画布', async ({ page }) => {
     await page.goto('/?seed=1');
     await expect(status(page)).toHaveText('playing');
-    await expect(enemiesLeft(page)).toHaveText('4');
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('4'));
     await expect(page.locator('canvas')).toBeVisible();
   });
 
@@ -47,9 +56,10 @@ test.describe('默认地图', () => {
       await page.waitForTimeout(80);
       await page.keyboard.up(key);
     }
-    await page.keyboard.press('Space');
+    await pressFire(page);
     await page.waitForTimeout(200);
-    await expect(enemiesLeft(page)).toHaveText(/^[0-4]$/);
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('[0-4]'));
+    await expect(status(page)).toHaveText('playing');
     expect(errors).toEqual([]);
   });
 });
@@ -72,13 +82,13 @@ test.describe('测试小地图 e2e-win', () => {
   test('射击击毁敌人：剩余敌人从 1 变 0，进入 won；重新开始后回到 playing', async ({ page }) => {
     await page.goto('/?level=e2e-win');
     await expect(status(page)).toHaveText('playing');
-    await expect(enemiesLeft(page)).toHaveText('1');
-    await page.keyboard.press('Space');
-    await expect(enemiesLeft(page)).toHaveText('0', { timeout: 5000 });
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('1'));
+    await pressFire(page);
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('0'), { timeout: 5000 });
     await expect(status(page)).toHaveText('won');
     await page.getByTestId('restart').click();
     await expect(status(page)).toHaveText('playing');
-    await expect(enemiesLeft(page)).toHaveText('1');
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('1'));
   });
 });
 
@@ -86,13 +96,13 @@ test.describe('测试小地图 e2e-lose', () => {
   test('被敌方子弹击中进入 lost，结束后停住；按回车重新开始', async ({ page }) => {
     await page.goto('/?level=e2e-lose');
     await expect(status(page)).toHaveText('lost', { timeout: 5000 });
-    await expect(enemiesLeft(page)).toHaveText('1');
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('1'));
     // 结束后游戏停住：等一会儿状态和计数都不变
     await page.waitForTimeout(500);
     await expect(status(page)).toHaveText('lost');
     await page.keyboard.press('Enter');
     await expect(status(page)).toHaveText('playing');
-    await expect(enemiesLeft(page)).toHaveText('1');
+    await expect(enemiesLeft(page)).toHaveText(enemyCount('1'));
     // 新的一局同样会输，说明重新开始用的是同一张图
     await expect(status(page)).toHaveText('lost', { timeout: 5000 });
   });
