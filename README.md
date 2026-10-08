@@ -28,7 +28,7 @@
 
 ## 本地运行
 
-需要 Node.js 20。
+需要 Node.js 20.19 及以上（或 22.13 及以上）。
 
 ```bash
 npm ci
@@ -56,6 +56,10 @@ Playwright 不进入 CI。本地跑端到端测试前，先安装 Chromium：
 npx playwright install chromium
 npm run test:e2e
 ```
+
+## 已知问题
+
+- 按键按下和松开如果落在同一帧内（约 16 毫秒以内），这次按键可能被忽略，空格不开火、方向键也不动；正常按键不受影响，本版不修。
 
 ## 目录结构
 
