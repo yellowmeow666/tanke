@@ -1,5 +1,5 @@
 export { createGame, step } from './engine';
-export { DEFAULT_LEVEL } from './level';
+export { DEFAULT_LEVEL, TEST_LEVELS, type TestLevelName } from './level';
 export * from './constants';
 export type {
   Bullet,

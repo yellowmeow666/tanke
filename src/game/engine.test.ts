@@ -3,6 +3,7 @@ import {
   BULLET_SPEED,
   DEFAULT_LEVEL,
   PLAYER_SPEED,
+  TEST_LEVELS,
   TANK_SIZE,
   TILE_SIZE,
   createGame,
@@ -313,5 +314,29 @@ describe('对局结束', () => {
 
   it('坦克大小与格子一致', () => {
     expect(TANK_SIZE).toBe(TILE_SIZE);
+  });
+});
+
+describe('测试用地图 TEST_LEVELS', () => {
+  it('e2e-win：按一次空格就赢', () => {
+    const s = createGame({ seed: 1, level: TEST_LEVELS['e2e-win'] });
+    expect(s.cols).toBe(13);
+    expect(s.enemiesLeft).toBe(1);
+    const end = runUntil(step(s, { fire: true }), (x) => x.status !== 'playing', 600);
+    expect(end.status).toBe('won');
+    expect(end.enemiesLeft).toBe(0);
+  });
+
+  it('e2e-win：不操作就一直是 playing', () => {
+    const s = run(createGame({ seed: 1, level: TEST_LEVELS['e2e-win'] }), 600);
+    expect(s.status).toBe('playing');
+  });
+
+  it('e2e-lose：不操作，开局约 1.5 秒内失败', () => {
+    const s = createGame({ seed: 1, level: TEST_LEVELS['e2e-lose'] });
+    const end = runUntil(s, (x) => x.status !== 'playing', 600);
+    expect(end.status).toBe('lost');
+    expect(end.tick).toBeLessThanOrEqual(120);
+    expect(end.enemiesLeft).toBe(1);
   });
 });
