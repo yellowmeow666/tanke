@@ -4,9 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>坦克大战</title>
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <main id="app">
+      <h1>坦克大战</h1>
+      <p class="help">方向键或 WASD 移动，空格射击。不能斜着走。</p>
+      <section class="hud" aria-label="对局信息">
+        <p data-testid="enemies-left">剩余敌人：0</p>
+        <p class="status-line">
+          <span data-testid="game-status">playing</span>
+          <span id="status-hint"></span>
+        </p>
+        <p>种子：<span id="seed-value"></span></p>
+        <button type="button" data-testid="restart" hidden>重新开始</button>
+      </section>
+      <canvas id="board" width="416" height="416"></canvas>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
